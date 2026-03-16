@@ -1,0 +1,22 @@
+root = true
+
+[*]
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.tf]
+indent_style = space
+indent_size = 2
+
+[*.tfvars]
+indent_style = space
+indent_size = 2
+
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab

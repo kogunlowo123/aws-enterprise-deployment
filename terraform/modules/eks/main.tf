@@ -1,15 +1,3 @@
-# Enterprise EKS Module - Production-Grade Kubernetes
-# Architect: Kehinde (Kenny) Samson Ogunlowo
-# CIS EKS Benchmark v1.4 hardened | IRSA enabled | Karpenter autoscaler
-
-terraform {
-  required_providers {
-    aws = { source = "hashicorp/aws", version = "~> 5.0" }
-    kubernetes = { source = "hashicorp/kubernetes", version = "~> 2.25" }
-  }
-}
-
-# ── EKS Cluster ──────────────────────────────────────────────────
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   version  = var.kubernetes_version
@@ -39,7 +27,7 @@ resource "aws_eks_cluster" "main" {
     service_ipv4_cidr = "172.20.0.0/16"
   }
 
-  tags = merge(var.common_tags, {
+  tags = merge(var.tags, {
     Name       = var.cluster_name
     Compliance = "CIS-EKS-Benchmark-v1.4"
   })
@@ -50,7 +38,6 @@ resource "aws_eks_cluster" "main" {
   ]
 }
 
-# ── Node Groups ───────────────────────────────────────────────────
 resource "aws_eks_node_group" "app" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.cluster_name}-app-nodes"
@@ -65,7 +52,9 @@ resource "aws_eks_node_group" "app" {
     min_size     = var.app_node_min
   }
 
-  update_config { max_unavailable = 1 }
+  update_config {
+    max_unavailable = 1
+  }
 
   launch_template {
     id      = aws_launch_template.node.id
@@ -83,7 +72,10 @@ resource "aws_eks_node_group" "app" {
     effect = "NO_SCHEDULE"
   }
 
-  tags = merge(var.common_tags, { NodeGroup = "application" })
+  tags = merge(var.tags, {
+    NodeGroup = "application"
+  })
+
   depends_on = [aws_iam_role_policy_attachment.node_policies]
 }
 
@@ -101,22 +93,29 @@ resource "aws_eks_node_group" "system" {
     min_size     = 2
   }
 
-  update_config { max_unavailable = 1 }
+  update_config {
+    max_unavailable = 1
+  }
 
-  labels = { role = "system", environment = var.environment }
-  tags   = merge(var.common_tags, { NodeGroup = "system" })
+  labels = {
+    role        = "system"
+    environment = var.environment
+  }
+
+  tags = merge(var.tags, {
+    NodeGroup = "system"
+  })
 
   depends_on = [aws_iam_role_policy_attachment.node_policies]
 }
 
-# ── Hardened Launch Template ──────────────────────────────────────
 resource "aws_launch_template" "node" {
   name_prefix = "${var.cluster_name}-node-"
 
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"  # IMDSv2 required (CIS 5.1.1)
-    http_put_response_hop_limit = 1           # Prevent SSRF via metadata
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
   }
 
   block_device_mappings {
@@ -132,61 +131,66 @@ resource "aws_launch_template" "node" {
 
   tag_specifications {
     resource_type = "instance"
-    tags          = merge(var.common_tags, { Name = "${var.cluster_name}-node" })
+    tags = merge(var.tags, {
+      Name = "${var.cluster_name}-node"
+    })
   }
 }
 
-# ── EKS Add-ons ───────────────────────────────────────────────────
 resource "aws_eks_addon" "vpc_cni" {
-  cluster_name             = aws_eks_cluster.main.name
-  addon_name               = "vpc-cni"
-  addon_version            = "v1.16.0-eksbuild.1"
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "vpc-cni"
+  addon_version               = "v1.16.0-eksbuild.1"
   resolve_conflicts_on_create = "OVERWRITE"
-  service_account_role_arn = aws_iam_role.vpc_cni.arn
-  tags                     = var.common_tags
+  service_account_role_arn    = aws_iam_role.vpc_cni.arn
+  tags                        = var.tags
 }
 
 resource "aws_eks_addon" "coredns" {
-  cluster_name             = aws_eks_cluster.main.name
-  addon_name               = "coredns"
-  addon_version            = "v1.11.1-eksbuild.4"
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "coredns"
+  addon_version               = "v1.11.1-eksbuild.4"
   resolve_conflicts_on_create = "OVERWRITE"
-  tags                     = var.common_tags
+  tags                        = var.tags
 }
 
 resource "aws_eks_addon" "kube_proxy" {
-  cluster_name             = aws_eks_cluster.main.name
-  addon_name               = "kube-proxy"
-  addon_version            = "v1.29.0-eksbuild.1"
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "kube-proxy"
+  addon_version               = "v1.29.0-eksbuild.1"
   resolve_conflicts_on_create = "OVERWRITE"
-  tags                     = var.common_tags
+  tags                        = var.tags
 }
 
 resource "aws_eks_addon" "aws_ebs_csi" {
-  cluster_name             = aws_eks_cluster.main.name
-  addon_name               = "aws-ebs-csi-driver"
-  addon_version            = "v1.27.0-eksbuild.1"
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "aws-ebs-csi-driver"
+  addon_version               = "v1.27.0-eksbuild.1"
   resolve_conflicts_on_create = "OVERWRITE"
-  service_account_role_arn = aws_iam_role.ebs_csi.arn
-  tags                     = var.common_tags
+  service_account_role_arn    = aws_iam_role.ebs_csi.arn
+  tags                        = var.tags
 }
 
-# ── CloudWatch Log Group for EKS ─────────────────────────────────
 resource "aws_cloudwatch_log_group" "eks" {
   name              = "/aws/eks/${var.cluster_name}/cluster"
   retention_in_days = 90
   kms_key_id        = var.kms_key_arn
-  tags              = var.common_tags
+  tags              = var.tags
 }
 
-# ── IAM - Cluster Role ────────────────────────────────────────────
 resource "aws_iam_role" "cluster" {
   name = "${var.cluster_name}-cluster-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{ Effect = "Allow", Principal = { Service = "eks.amazonaws.com" }, Action = "sts:AssumeRole" }]
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "eks.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
   })
-  tags = var.common_tags
+
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_policy" {
@@ -194,14 +198,19 @@ resource "aws_iam_role_policy_attachment" "cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-# ── IAM - Node Role ───────────────────────────────────────────────
 resource "aws_iam_role" "node" {
   name = "${var.cluster_name}-node-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{ Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" }, Action = "sts:AssumeRole" }]
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
   })
-  tags = var.common_tags
+
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "node_policies" {
@@ -209,13 +218,13 @@ resource "aws_iam_role_policy_attachment" "node_policies" {
     "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
     "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
     "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"  # Session Manager (no SSH)
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
   ])
+
   role       = aws_iam_role.node.name
   policy_arn = each.value
 }
 
-# ── Security Group ────────────────────────────────────────────────
 resource "aws_security_group" "cluster" {
   name_prefix = "${var.cluster_name}-cluster-"
   vpc_id      = var.vpc_id
@@ -229,10 +238,11 @@ resource "aws_security_group" "cluster" {
     description = "Allow all outbound"
   }
 
-  tags = merge(var.common_tags, { Name = "${var.cluster_name}-cluster-sg" })
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-cluster-sg"
+  })
 }
 
-# ── IRSA - OIDC Provider ──────────────────────────────────────────
 data "tls_certificate" "eks" {
   url = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
@@ -241,16 +251,16 @@ resource "aws_iam_openid_connect_provider" "eks" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
   url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
-  tags            = var.common_tags
+  tags            = var.tags
 }
 
-# ── IRSA Roles (VPC CNI, EBS CSI) ───────────────────────────────
 resource "aws_iam_role" "vpc_cni" {
   name = "${var.cluster_name}-vpc-cni-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
@@ -269,10 +279,11 @@ resource "aws_iam_role_policy_attachment" "vpc_cni" {
 
 resource "aws_iam_role" "ebs_csi" {
   name = "${var.cluster_name}-ebs-csi-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {

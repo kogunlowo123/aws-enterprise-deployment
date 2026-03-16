@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture - aws-enterprise-deployment</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0b0c0b;color:#f5f2eb;font-family:'SF Mono','Fira Code','Cascadia Code',Consolas,monospace;line-height:1.6;padding:0}
+a{color:#c8420a;text-decoration:none}a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:2rem}
+h1{font-size:2rem;color:#f5f2eb;margin-bottom:0.5rem}
+h2{font-size:1.4rem;color:#c8420a;margin:2rem 0 1rem;padding-bottom:0.5rem;border-bottom:1px solid #222}
+h3{font-size:1.1rem;color:#f5f2eb;margin:1.5rem 0 0.75rem}
+.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:4px;font-size:0.8rem;font-weight:600;margin-right:0.5rem;margin-bottom:0.5rem}
+.badge-lang{background:#1a3a1a;color:#4ade80;border:1px solid #2d5a2d}
+.badge-cat{background:#1a1a3a;color:#60a5fa;border:1px solid #2d2d5a}
+.badge-ver{background:#3a1a1a;color:#f87171;border:1px solid #5a2d2d}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1rem 0}
+.card{background:#141514;border:1px solid #222;border-radius:8px;padding:1.25rem;text-align:center}
+.card-value{font-size:1.5rem;color:#c8420a;font-weight:700}
+.card-label{font-size:0.8rem;color:#888;margin-top:0.25rem}
+.arch-diagram{background:#101210;border:1px solid #222;border-radius:8px;padding:2rem;margin:1rem 0;overflow-x:auto}
+.flow-row{display:flex;justify-content:center;align-items:center;gap:0.5rem;margin:0.75rem 0;flex-wrap:wrap}
+.flow-box{background:#1a1a2e;border:2px solid #c8420a;border-radius:6px;padding:0.5rem 1rem;font-size:0.8rem;text-align:center;min-width:120px;color:#f5f2eb}
+.flow-box.accent{background:#c8420a;color:#fff;border-color:#e8520a}
+.flow-box.blue{border-color:#1982c4;background:#0f1f3a}
+.flow-box.green{border-color:#2b9348;background:#0f2a1a}
+.flow-box.purple{border-color:#533483;background:#1a0f2e}
+.flow-arrow{color:#c8420a;font-size:1.2rem;font-weight:bold}
+.flow-arrow-down{display:flex;justify-content:center;color:#c8420a;font-size:1.2rem;font-weight:bold}
+.flow-label{font-size:0.7rem;color:#888;display:block}
+table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.85rem}
+th{background:#1a1a1a;color:#c8420a;padding:0.75rem;text-align:left;border-bottom:2px solid #333;white-space:nowrap}
+td{padding:0.75rem;border-bottom:1px solid #1a1a1a}
+tr:hover{background:#141514}
+code{background:#1a1a1a;padding:0.15rem 0.4rem;border-radius:3px;font-size:0.85rem;color:#e8a060}
+.checklist{list-style:none;padding:0}
+.checklist li{padding:0.4rem 0;padding-left:1.5rem;position:relative}
+.checklist li::before{content:'[ ]';position:absolute;left:0;color:#c8420a;font-weight:bold}
+.section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
+.section-box{background:#141514;border:1px solid #222;border-radius:8px;padding:1.25rem}
+.section-box h3{margin-top:0}
+footer{margin-top:3rem;padding:1.5rem 0;border-top:1px solid #222;text-align:center;font-size:0.75rem;color:#555}
+.env-table td:first-child{color:#4ade80}
+.header-bar{background:#141514;border-bottom:1px solid #222;padding:1.5rem 0}
+.header-bar .container{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.industry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.industry-card{background:#141514;border:1px solid #222;border-radius:8px;padding:1rem}
+.industry-card h4{color:#c8420a;margin-bottom:0.5rem;font-size:0.95rem}
+.industry-card p{font-size:0.8rem;color:#aaa}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+<div class="container">
+<div>
+<h1>aws-enterprise-deployment</h1>
+<p style="color:#888;margin-top:0.25rem">Production-grade AWS multi-tier deployment with EKS, RDS Aurora, CloudFront, WAFv2, and Zero Trust networking</p>
+</div>
+<div>
+<span class="badge badge-lang">HCL (Terraform)</span>
+<span class="badge badge-cat">Infrastructure</span>
+<span class="badge badge-ver">v1.0.0</span>
+</div>
+</div>
+</div>
+
+<div class="container">
+
+<h2>Executive Summary</h2>
+<p>A production-grade, security-hardened AWS deployment using Terraform IaC. Built on real-world patterns from BP Refinery, Patterson UTI, and Mammoth Energy Services. Implements a Zero Trust network architecture with a 3-AZ VPC, EKS 1.29 with IRSA and Karpenter, RDS Aurora PostgreSQL Multi-AZ, CloudFront CDN with WAFv2 OWASP managed rules, and a full observability stack with GuardDuty, Security Hub, VPC Flow Logs, and Athena analytics. Modules are aligned to NIST 800-53, CIS EKS Benchmark, HIPAA, SOC 2, and CMMC compliance frameworks.</p>
+
+<h2>Overview</h2>
+<div class="cards">
+<div class="card"><div class="card-value">HCL</div><div class="card-label">Language</div></div>
+<div class="card"><div class="card-value">Infrastructure</div><div class="card-label">Category</div></div>
+<div class="card"><div class="card-value">3</div><div class="card-label">Terraform Modules</div></div>
+<div class="card"><div class="card-value">3 AZs</div><div class="card-label">Availability Zones</div></div>
+<div class="card"><div class="card-value">Zero Trust</div><div class="card-label">Network Model</div></div>
+<div class="card"><div class="card-value">MIT</div><div class="card-label">License</div></div>
+</div>
+
+<h2>Architecture Diagram</h2>
+<div class="arch-diagram">
+<div class="flow-row">
+<div class="flow-box accent">Internet<br><span class="flow-label">End Users</span></div>
+</div>
+<div class="flow-arrow-down">v</div>
+<div class="flow-row">
+<div class="flow-box blue">Route 53<br><span class="flow-label">DNS Resolution</span></div>
+</div>
+<div class="flow-arrow-down">v</div>
+<div class="flow-row">
+<div class="flow-box accent">CloudFront CDN<br><span class="flow-label">Edge Distribution</span></div>
+<div class="flow-arrow">&lt;--&gt;</div>
+<div class="flow-box purple">WAFv2<br><span class="flow-label">OWASP Managed Rules</span></div>
+</div>
+<div class="flow-arrow-down">v</div>
+<div class="flow-row">
+<div class="flow-box green">ALB<br><span class="flow-label">Public Subnets (3 AZs)</span></div>
+</div>
+<div class="flow-arrow-down">v</div>
+<div class="flow-row">
+<div class="flow-box accent">EKS Cluster<br><span class="flow-label">Private Subnets (EKS 1.29 + IRSA)</span></div>
+</div>
+<div class="flow-row">
+<div class="flow-box blue">App Nodes<br><span class="flow-label">m5.xlarge</span></div>
+<div class="flow-box purple">ML Nodes<br><span class="flow-label">g4dn.xlarge</span></div>
+<div class="flow-box green">System Nodes<br><span class="flow-label">t3.medium</span></div>
+</div>
+<div class="flow-arrow-down">v</div>
+<div class="flow-row">
+<div class="flow-box accent">RDS Aurora PostgreSQL<br><span class="flow-label">Multi-AZ + Encrypted</span></div>
+<div class="flow-box blue">ElastiCache Redis<br><span class="flow-label">Session / Cache</span></div>
+<div class="flow-box green">S3 Encrypted<br><span class="flow-label">Object Storage</span></div>
+</div>
+<div class="flow-label" style="text-align:center">Data Layer (Data Subnets)</div>
+<div class="flow-arrow-down">v</div>
+<div class="flow-row">
+<div class="flow-box purple">VPC Flow Logs<br><span class="flow-label">S3 + Athena</span></div>
+<div class="flow-box accent">GuardDuty<br><span class="flow-label">Threat Detection</span></div>
+<div class="flow-box blue">Security Hub<br><span class="flow-label">Compliance + SNS</span></div>
+</div>
+<div class="flow-label" style="text-align:center">Observability Layer</div>
+</div>
+
+<h2>Component Breakdown</h2>
+<table>
+<thead><tr><th>Module</th><th>Path</th><th>Purpose</th><th>Compliance</th></tr></thead>
+<tbody>
+<tr><td>VPC</td><td><code>terraform/modules/vpc/</code></td><td>3-AZ VPC with public, private, and data subnets, NAT Gateways, VPC Flow Logs</td><td>NIST 800-53 SC-7</td></tr>
+<tr><td>EKS</td><td><code>terraform/modules/eks/</code></td><td>EKS 1.29 with IRSA, OIDC provider, Karpenter autoscaler, 3 node groups (app/ML/system)</td><td>CIS EKS Benchmark</td></tr>
+<tr><td>RDS</td><td><code>terraform/modules/rds/</code></td><td>Aurora PostgreSQL Multi-AZ with AES-256 encryption, automated backups, performance insights</td><td>HIPAA 164.312</td></tr>
+<tr><td>Prod Environment</td><td><code>terraform/environments/prod/</code></td><td>Production environment composition wiring VPC, EKS, and RDS modules with CloudFront, WAF, and security services</td><td>SOC 2, CMMC</td></tr>
+</tbody>
+</table>
+
+<h2>Data Flow / Request Flow</h2>
+<div class="section-box">
+<ol style="padding-left:1.5rem;color:#ccc">
+<li><strong>DNS Resolution</strong> -- Route 53 resolves the application domain to the CloudFront distribution.</li>
+<li><strong>Edge Security</strong> -- CloudFront serves cached content and forwards dynamic requests through WAFv2 (OWASP managed rules + custom rate limits).</li>
+<li><strong>Load Balancing</strong> -- The ALB in public subnets distributes traffic across EKS pods in private subnets.</li>
+<li><strong>Application Processing</strong> -- EKS pods (app/ML/system node groups) process requests using IRSA for secure AWS service access.</li>
+<li><strong>Data Access</strong> -- Applications connect to Aurora PostgreSQL (Multi-AZ, encrypted), ElastiCache Redis, and S3 in isolated data subnets.</li>
+<li><strong>Security Monitoring</strong> -- VPC Flow Logs stream to S3 for Athena analysis. GuardDuty monitors for threats. Security Hub aggregates compliance findings and alerts via SNS.</li>
+</ol>
+</div>
+
+<h2>Security Controls</h2>
+<table>
+<thead><tr><th>Control</th><th>Implementation</th></tr></thead>
+<tbody>
+<tr><td>Network Segmentation</td><td>3-tier subnet architecture (public/private/data) with restrictive security groups</td></tr>
+<tr><td>Zero Trust</td><td>No direct internet access for private/data subnets; all egress via NAT Gateway</td></tr>
+<tr><td>WAF</td><td>WAFv2 with OWASP managed rules and custom rate limiting on CloudFront</td></tr>
+<tr><td>Encryption at Rest</td><td>AES-256 for RDS, S3, and EBS volumes via KMS</td></tr>
+<tr><td>Encryption in Transit</td><td>TLS termination at ALB; TLS for all internal service communication</td></tr>
+<tr><td>IAM</td><td>Least-privilege roles with permission boundaries; IRSA for EKS pod-level access</td></tr>
+<tr><td>Threat Detection</td><td>GuardDuty for runtime threat detection; Security Hub for compliance posture</td></tr>
+<tr><td>Audit Logging</td><td>VPC Flow Logs, CloudTrail, and EKS audit logs with S3 archival</td></tr>
+</tbody>
+</table>
+
+<h2>Industry Adaptation</h2>
+<div class="industry-grid">
+<div class="industry-card"><h4>Healthcare</h4><p>HIPAA-compliant RDS encryption (164.312), BAA-eligible services, PHI data subnet isolation, audit logging for access tracking.</p></div>
+<div class="industry-card"><h4>Energy / Industrial</h4><p>BP Refinery / Patterson UTI patterns, SCADA network isolation, OT/IT segmentation via VPC design, high-availability for critical operations.</p></div>
+<div class="industry-card"><h4>Finance</h4><p>SOC 2 compliant S3 storage, PCI-DSS WAF rules, encrypted RDS for financial data, Security Hub compliance monitoring.</p></div>
+<div class="industry-card"><h4>Government</h4><p>CMMC AC-6 IAM controls, NIST 800-53 network segmentation, GovCloud deployment support, FedRAMP-aligned security services.</p></div>
+</div>
+
+<h2>Production Readiness Checklist</h2>
+<ul class="checklist">
+<li>Configure Terraform backend with S3 + DynamoDB state locking</li>
+<li>Set up AWS credentials with least-privilege deployment role</li>
+<li>Review and customize prod.tfvars for environment-specific settings</li>
+<li>Validate VPC CIDR ranges and subnet allocations for the deployment region</li>
+<li>Configure EKS node group instance types and scaling limits</li>
+<li>Set RDS backup retention, maintenance window, and performance insights</li>
+<li>Configure WAFv2 custom rules for application-specific protections</li>
+<li>Enable GuardDuty, Security Hub, and CloudTrail in the deployment region</li>
+<li>Set up SNS notifications for security findings</li>
+<li>Run <code>terraform plan</code> and review all changes before apply</li>
+<li>Configure VPC Flow Logs with Athena query workspace</li>
+</ul>
+
+<h2>Configuration / Environment Variables</h2>
+<table class="env-table">
+<thead><tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>AWS_ACCESS_KEY_ID</code></td><td>Yes</td><td>--</td><td>AWS access key for deployment</td></tr>
+<tr><td><code>AWS_SECRET_ACCESS_KEY</code></td><td>Yes</td><td>--</td><td>AWS secret key</td></tr>
+<tr><td><code>AWS_DEFAULT_REGION</code></td><td>No</td><td>us-east-1</td><td>Target AWS region</td></tr>
+<tr><td><code>TF_VAR_environment</code></td><td>No</td><td>prod</td><td>Environment name (prod/staging/dev)</td></tr>
+<tr><td><code>TF_VAR_vpc_cidr</code></td><td>No</td><td>10.0.0.0/16</td><td>VPC CIDR block</td></tr>
+<tr><td><code>TF_VAR_cluster_version</code></td><td>No</td><td>1.29</td><td>EKS Kubernetes version</td></tr>
+</tbody>
+</table>
+
+<h2>Deployment</h2>
+<div class="section-grid">
+<div class="section-box">
+<h3>Local Development</h3>
+<pre><code>git clone https://github.com/kogunlowo123/aws-enterprise-deployment.git
+cd aws-enterprise-deployment/terraform/environments/prod
+terraform init
+terraform validate
+terraform plan -var-file=prod.tfvars</code></pre>
+</div>
+<div class="section-box">
+<h3>Production Deployment</h3>
+<pre><code>cd terraform/environments/prod
+terraform init -backend-config=backend.hcl
+terraform workspace new prod
+terraform plan -var-file=prod.tfvars
+terraform apply -auto-approve
+
+# Post-deployment verification
+aws eks update-kubeconfig --name cluster
+kubectl get nodes</code></pre>
+</div>
+</div>
+
+<h2>Links</h2>
+<table>
+<tbody>
+<tr><td>Repository</td><td><a href="https://github.com/kogunlowo123/aws-enterprise-deployment">github.com/kogunlowo123/aws-enterprise-deployment</a></td></tr>
+<tr><td>README</td><td><a href="../README.md">README.md</a></td></tr>
+<tr><td>Deployment Guide</td><td><a href="DEPLOYMENT-GUIDE.md">DEPLOYMENT-GUIDE.md</a></td></tr>
+<tr><td>License</td><td><a href="../LICENSE">MIT License</a></td></tr>
+</tbody>
+</table>
+
+<footer>
+Generated on 2026-03-15 | aws-enterprise-deployment v1.0.0 | Architecture Documentation
+</footer>
+
+</div>
+</body>
+</html>
