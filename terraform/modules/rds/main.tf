@@ -54,18 +54,18 @@ resource "aws_rds_cluster" "main" {
 }
 
 resource "aws_rds_cluster_instance" "main" {
-  count                                     = var.instance_count
-  identifier                                = "${var.environment}-aurora-${count.index}"
-  cluster_identifier                        = aws_rds_cluster.main.id
-  instance_class                            = var.instance_class
-  engine                                    = aws_rds_cluster.main.engine
-  engine_version                            = aws_rds_cluster.main.engine_version
-  publicly_accessible                       = false
-  monitoring_interval                       = 60
-  monitoring_role_arn                       = aws_iam_role.rds_enhanced_monitoring.arn
-  performance_insights_enabled              = true
-  performance_insights_kms_key_id           = var.kms_key_arn
-  performance_insights_retention_period     = 731
+  count                                 = var.instance_count
+  identifier                            = "${var.environment}-aurora-${count.index}"
+  cluster_identifier                    = aws_rds_cluster.main.id
+  instance_class                        = var.instance_class
+  engine                                = aws_rds_cluster.main.engine
+  engine_version                        = aws_rds_cluster.main.engine_version
+  publicly_accessible                   = false
+  monitoring_interval                   = 60
+  monitoring_role_arn                   = aws_iam_role.rds_enhanced_monitoring.arn
+  performance_insights_enabled          = true
+  performance_insights_kms_key_id       = var.kms_key_arn
+  performance_insights_retention_period = 731
 
   tags = var.tags
 }
