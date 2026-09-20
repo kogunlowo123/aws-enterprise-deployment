@@ -44,3 +44,8 @@ terraform workspace new prod
 terraform plan -var-file=prod.tfvars
 terraform apply -auto-approve
 ```
+
+<!-- architecture -->
+## Architecture
+
+![Architecture diagram](docs/architecture.svg)
